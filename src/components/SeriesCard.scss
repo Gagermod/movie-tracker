@@ -1,0 +1,476 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+.series-card {
+  @include card;
+  padding: 18px 20px;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 18px;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: $border-strong;
+  }
+
+  &:hover &__delete {
+    opacity: 1;
+  }
+
+  &__poster {
+    width: 80px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: $radius;
+    border: 1px solid $border-strong;
+    flex-shrink: 0;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  &__head {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__overall {
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  &__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-strong;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &__release {
+    font-weight: 400;
+    color: $text-muted;
+  }
+
+  &__year {
+    font-size: 14px;
+    color: $text-muted;
+  }
+
+  &__thoughts {
+    grid-column: 1 / -1;
+    margin-bottom: 14px;
+  }
+
+  &__thoughts-view {
+    font-size: 14px;
+    color: $text-dim;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: $radius-sm;
+    transition: all 0.15s;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+
+    &:hover {
+      background: $bg-input;
+      color: $text-muted;
+    }
+
+    &--static {
+      cursor: default;
+
+      &:hover {
+        background: transparent;
+        color: $text-dim;
+      }
+    }
+  }
+
+  &__thoughts-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__textarea {
+    @include input;
+    resize: vertical;
+    min-height: 48px;
+    line-height: 1.5;
+  }
+
+  &__thoughts-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__btn-save {
+    @include btn-primary;
+    padding: 6px 14px;
+    font-size: 14px;
+  }
+
+  &__btn-cancel {
+    @include btn-ghost;
+    padding: 6px 14px;
+    font-size: 14px;
+  }
+
+  &__seasons {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: $text-dim;
+    padding: 4px 0;
+  }
+
+  &__spinner {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    border: 2px solid $border-strong;
+    border-top-color: $green;
+    border-radius: 50%;
+    animation: series-spin 0.7s linear infinite;
+  }
+
+  &__add-season {
+    @include btn-ghost;
+    justify-content: center;
+    padding: 8px;
+    font-size: 14px;
+    margin-top: 4px;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+  }
+
+  &__message {
+    font-size: 13px;
+    color: $text-muted;
+    background: $bg-input;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    padding: 8px 12px;
+    margin-top: 6px;
+  }
+
+  &__delete {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: $text-dim;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.15s;
+
+    &:hover {
+      background: $bg-input;
+      color: $red;
+    }
+  }
+}
+
+.season {
+  background: $bg-input;
+  border: 1px solid $border;
+  border-radius: $radius;
+  overflow: hidden;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    padding-right: 10px;
+  }
+
+  &__expand {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__arrow {
+    font-size: 10px;
+    color: $text-muted;
+    transition: transform 0.15s;
+
+    &.open {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-strong;
+    overflow-wrap: anywhere;
+  }
+
+  &__progress {
+    margin-left: auto;
+    font-size: 14px;
+    color: $text-muted;
+    flex-shrink: 0;
+  }
+
+  &__bar {
+    height: 3px;
+    background: $border;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    height: 100%;
+    background: $green;
+    border-radius: 2px;
+    transition: width 0.2s;
+  }
+
+  &__episodes {
+    padding: 0 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__add-episode {
+    background: none;
+    border: 1px dashed $border-strong;
+    border-radius: $radius-sm;
+    color: $text-dim;
+    font-size: 14px;
+    padding: 6px;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: all 0.15s;
+
+    &:hover {
+      border-color: $text-muted;
+      color: $text-muted;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: wait;
+
+      &:hover {
+        border-color: $border-strong;
+        color: $text-dim;
+      }
+    }
+  }
+}
+
+.episode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  &__check {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    accent-color: $green;
+    cursor: pointer;
+  }
+
+  &__name {
+    font-size: 14px;
+    color: $text;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: $breakpoint-lg) {
+  .series-card {
+    padding: 26px 28px;
+    gap: 22px;
+
+    &__poster {
+      width: 100px;
+      height: 150px;
+    }
+
+    &__title {
+      font-size: 20px;
+    }
+
+    &__year {
+      font-size: 15px;
+    }
+
+    &__thoughts-view,
+    &__textarea {
+      font-size: 16px;
+    }
+
+    &__btn-save,
+    &__btn-cancel {
+      font-size: 15px;
+    }
+
+    &__delete {
+      width: 30px;
+      height: 30px;
+      font-size: 19px;
+    }
+
+    &__add-season {
+      font-size: 14px;
+      padding: 10px;
+    }
+  }
+
+  .season {
+    &__head {
+      padding: 15px 18px;
+      padding-right: 12px;
+      gap: 16px;
+    }
+
+    &__title {
+      font-size: 16px;
+    }
+
+    &__progress {
+      font-size: 15px;
+    }
+
+    &__bar {
+      height: 5px;
+    }
+
+    &__add-episode {
+      font-size: 15px;
+      padding: 8px;
+    }
+  }
+
+  .episode {
+    padding: 8px 10px;
+
+    &__check {
+      width: 16px;
+      height: 16px;
+    }
+
+    &__name {
+      font-size: 15px;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .series-card {
+    &__head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    &__overall {
+      align-self: flex-start;
+    }
+  }
+
+  .season {
+    &__head {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+
+      .rating {
+        align-self: flex-start;
+      }
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .series-card {
+    padding: 16px 14px;
+    gap: 12px;
+
+    &__poster {
+      width: 64px;
+      height: 96px;
+    }
+
+    &__head {
+      gap: 10px;
+    }
+
+    &__delete {
+      opacity: 1;
+    }
+  }
+
+  .season {
+    &__head {
+      padding: 12px 10px;
+    }
+  }
+}
+
+@keyframes series-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

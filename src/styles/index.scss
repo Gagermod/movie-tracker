@@ -1,0 +1,30 @@
+@use '@a1rth/css-normalize';
+@use 'variables' as *;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: $text;
+  background: $bg;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: $breakpoint-lg) {
+  body {
+    font-size: 16px;
+  }
+}

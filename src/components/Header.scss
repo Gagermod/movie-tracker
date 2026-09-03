@@ -1,0 +1,78 @@
+@use '../styles/variables' as *;
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid $border;
+  margin-bottom: 24px;
+
+  &__brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: $text-strong;
+    letter-spacing: -0.2px;
+  }
+
+  &__nav {
+    display: flex;
+    gap: 4px;
+    background: $bg-input;
+    border-radius: $radius;
+    padding: 3px;
+  }
+
+  &__tab {
+    padding: 7px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: $text-muted;
+    border-radius: $radius-sm;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      color: $text;
+    }
+
+    &.active {
+      background: $bg-card;
+      color: $text-strong;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+@media (min-width: $breakpoint-lg) {
+  .header {
+    padding-bottom: 24px;
+    margin-bottom: 34px;
+
+    &__brand {
+      font-size: 24px;
+    }
+
+    &__nav {
+      gap: 6px;
+    }
+
+    &__tab {
+      padding: 10px 22px;
+      font-size: 16px;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .header {
+    margin-bottom: 18px;
+
+    &__tab {
+      padding: 7px 12px;
+    }
+  }
+}

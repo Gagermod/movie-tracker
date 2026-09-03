@@ -1,0 +1,35 @@
+@use '../styles/variables' as *;
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  &__group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: 14px;
+    color: $text-muted;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .filter-bar {
+    gap: 12px;
+  }
+}
+
+@media (min-width: $breakpoint-lg) {
+  .filter-bar {
+    &__label {
+      font-size: 15px;
+    }
+  }
+}
