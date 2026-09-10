@@ -254,7 +254,10 @@ export function SeriesCard({
                 {isExpanded && (
                   <div className="season__episodes">
                     {season.episodes.map((ep, eIdx) => (
-                      <label className="episode" key={eIdx}>
+                      <label
+                        className={`episode ${readonly ? 'episode--readonly' : ''}`}
+                        key={eIdx}
+                      >
                         <input
                           type="checkbox"
                           className="episode__check"

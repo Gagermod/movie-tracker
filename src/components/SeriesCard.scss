@@ -324,6 +324,44 @@
     background: rgba(255, 255, 255, 0.03);
   }
 
+  &--readonly {
+    cursor: default;
+
+    &:hover {
+      background: transparent;
+    }
+
+    .episode__check {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid $text-muted;
+      border-radius: 4px;
+      background: transparent;
+      margin: 0;
+      cursor: default;
+
+      &:checked {
+        border-color: $green;
+        background: $green;
+        position: relative;
+
+        &::after {
+          content: '';
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 4px;
+          height: 8px;
+          margin: -4px 0 0 -2px;
+          border: solid #fff;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+      }
+    }
+  }
+
   &__check {
     width: 14px;
     height: 14px;
@@ -404,6 +442,13 @@
     &__check {
       width: 16px;
       height: 16px;
+    }
+
+    &--readonly {
+      .episode__check {
+        width: 16px;
+        height: 16px;
+      }
     }
 
     &__name {
