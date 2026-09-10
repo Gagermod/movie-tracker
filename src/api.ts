@@ -1,6 +1,7 @@
 import type { Movie, Series } from './types'
 
 const FP_KEY = 'mt_fingerprint'
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 function generateFingerprint(): string {
   const bytes = new Uint8Array(32)
@@ -19,7 +20,7 @@ export function getFingerprint(): string {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const fp = getFingerprint()
-  const res = await fetch(path, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -60,7 +61,7 @@ export async function saveData(data: AppData): Promise<{ ok: boolean }> {
 }
 
 export async function fetchShared(shareId: string): Promise<AppData> {
-  const res = await fetch(`/api/share/${shareId}`)
+  const res = await fetch(`${API_BASE}/api/share/${shareId}`)
   if (!res.ok) throw new Error('Shared tracker not found')
   return res.json() as Promise<AppData>
 }
