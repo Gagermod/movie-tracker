@@ -12,6 +12,7 @@ import {
   fetchShared,
 } from './api'
 import { fetchSeriesSeasons } from './utils/omdb'
+import { loadStoredData, saveDataToStorage } from './storage'
 import './App.scss'
 
 type SortOption = 'rating-desc' | 'rating-asc' | 'year-desc' | 'year-asc'
@@ -80,9 +81,10 @@ function App() {
   const [shareId] = useState(() => getShareIdFromPath())
   const readonly = shareId !== null
 
+  const [storedData] = useState(() => loadStoredData())
   const [tab, setTab] = useState<'movies' | 'series'>('movies')
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [series, setSeries] = useState<Series[]>([])
+  const [movies, setMovies] = useState<Movie[]>(storedData?.movies ?? [])
+  const [series, setSeries] = useState<Series[]>(storedData?.series ?? [])
   const [modalOpen, setModalOpen] = useState(false)
   const [yearFilter, setYearFilter] = useState<number | null>(null)
   const [seriesLoading, setSeriesLoading] = useState<Set<string>>(new Set())
@@ -123,8 +125,19 @@ function App() {
         setShareUrl(`${window.location.origin}${identity.shareUrl}`)
         const data = await fetchData()
         if (cancelled) return
-        setMovies(data.movies)
-        setSeries(data.series)
+        const stored = storedData
+        const hasStored =
+          stored && (stored.movies.length > 0 || stored.series.length > 0)
+        if (hasStored) {
+          setMovies(stored.movies)
+          setSeries(stored.series)
+          saveData({ movies: stored.movies, series: stored.series }).catch(
+            () => setOffline(true)
+          )
+        } else {
+          setMovies(data.movies)
+          setSeries(data.series)
+        }
       } catch {
         if (cancelled) return
         setOffline(true)
@@ -139,9 +152,15 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [readonly, shareId])
+  }, [readonly, shareId, storedData])
 
   const skipFirstSave = useRef(true)
+
+  useEffect(() => {
+    if (readonly) return
+    saveDataToStorage({ movies, series })
+  }, [movies, series, readonly])
+
   useEffect(() => {
     if (readonly || !loaded || offline) return
     if (skipFirstSave.current) {
@@ -310,9 +329,9 @@ function App() {
           </div>
         )}
 
-        {!readonly && offline && (
+{!readonly && offline && (
           <div className="app__offline">
-            Backend unreachable — changes won't be saved.
+            Backend unreachable — your changes are kept on this device.
           </div>
         )}
 
