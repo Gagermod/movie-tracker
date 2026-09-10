@@ -34,5 +34,15 @@ export type Series = {
   seasons: Season[]
 }
 
+export type WatchLaterItem = {
+  id: string
+  title: string
+  type: 'movie' | 'series'
+  releaseYear: number | null
+  poster?: string
+  imdbID?: string
+  totalSeasons?: number
+}
+
 export type Entry = Movie & { type: 'movie' }
 export type SeriesEntry = Series & { type: 'series' }

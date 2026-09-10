@@ -58,6 +58,19 @@ const SCHEMA = `
     watched INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS watch_later (
+    id TEXT NOT NULL,
+    owner_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    type TEXT NOT NULL,
+    release_year INTEGER,
+    poster TEXT,
+    imdb_id TEXT,
+    total_seasons INTEGER,
+    PRIMARY KEY (owner_id, id),
+    FOREIGN KEY (owner_id) REFERENCES owners(id) ON DELETE CASCADE
+  );
 `
 
 export default function createSqliteDb(dbPath) {

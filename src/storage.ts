@@ -15,7 +15,12 @@ export function loadStoredData(): AppData | null {
     ) {
       return null
     }
-    return parsed as AppData
+    const data = parsed as AppData
+    return {
+      movies: data.movies,
+      series: data.series,
+      watchLater: Array.isArray(data.watchLater) ? data.watchLater : [],
+    }
   } catch {
     return null
   }

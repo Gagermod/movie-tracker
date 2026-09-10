@@ -1,8 +1,10 @@
 import './Header.scss'
 
+export type Tab = 'movies' | 'series' | 'watchLater'
+
 type Props = {
-  tab: 'movies' | 'series'
-  onTabChange: (tab: 'movies' | 'series') => void
+  tab: Tab
+  onTabChange: (tab: Tab) => void
 }
 
 export function Header({ tab, onTabChange }: Props) {
@@ -23,6 +25,14 @@ export function Header({ tab, onTabChange }: Props) {
           Series
         </button>
       </nav>
+      <div className="header__watch">
+        <button
+          className={`header__tab ${tab === 'watchLater' ? 'active' : ''}`}
+          onClick={() => onTabChange('watchLater')}
+        >
+          Watch Later
+        </button>
+      </div>
     </header>
   )
 }

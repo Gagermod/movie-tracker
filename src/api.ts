@@ -1,4 +1,4 @@
-import type { Movie, Series } from './types'
+import type { Movie, Series, WatchLaterItem } from './types'
 
 const FP_KEY = 'mt_fingerprint'
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -38,6 +38,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export type AppData = {
   movies: Movie[]
   series: Series[]
+  watchLater: WatchLaterItem[]
 }
 
 type IdentityResponse = {

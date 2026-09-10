@@ -18,23 +18,35 @@ type Props = {
     imdbID?: string
     totalSeasons?: number
   }) => void
+  initial?: {
+    title: string
+    releaseYear: number | null
+    poster?: string
+    imdbID?: string
+    totalSeasons?: number
+  }
 }
 
-export function Modal({ type, onClose, onAdd }: Props) {
-  const [title, setTitle] = useState('')
-  const [releaseYear, setReleaseYear] = useState<number | null>(null)
+export function Modal({ type, onClose, onAdd, initial }: Props) {
+  const [title, setTitle] = useState(initial?.title ?? '')
+  const [releaseYear, setReleaseYear] = useState<number | null>(
+    initial?.releaseYear ?? null
+  )
   const [year, setYear] = useState(new Date().getFullYear())
   const [rating, setRating] = useState<RatingLevel>(0)
   const [thoughts, setThoughts] = useState('')
-  const [poster, setPoster] = useState<string | undefined>()
-  const [imdbID, setImdbID] = useState<string | undefined>()
-  const [totalSeasons, setTotalSeasons] = useState<number | undefined>()
+  const [poster, setPoster] = useState<string | undefined>(initial?.poster)
+  const [imdbID, setImdbID] = useState<string | undefined>(initial?.imdbID)
+  const [totalSeasons, setTotalSeasons] = useState<number | undefined>(
+    initial?.totalSeasons
+  )
 
   const [results, setResults] = useState<OmdbSearchItem[]>([])
   const [searching, setSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const skipSearchOnMount = useRef(Boolean(initial))
 
   useEffect(() => {
     return () => {
@@ -54,21 +66,24 @@ export function Modal({ type, onClose, onAdd }: Props) {
   }, [])
 
   useEffect(() => {
+    if (skipSearchOnMount.current) {
+      skipSearchOnMount.current = false
+      return
+    }
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     const q = title.trim()
-    if (q.length < 2) {
-      setResults([])
-      setSearching(false)
-      return
-    }
-
-    setSearching(true)
     debounceRef.current = setTimeout(async () => {
+      if (q.length < 2) {
+        setResults([])
+        setSearching(false)
+        return
+      }
+      setSearching(true)
       const items = await searchOmdb(q, type)
       setResults(items)
       setSearching(false)
-    }, 400)
+    }, q.length < 2 ? 0 : 400)
   }, [title, type])
 
   const handleSelect = async (item: OmdbSearchItem) => {
@@ -112,7 +127,13 @@ export function Modal({ type, onClose, onAdd }: Props) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <h2 className="modal__title">
-            {type === 'movie' ? 'Add Movie' : 'Add Series'}
+            {initial
+              ? type === 'movie'
+                ? 'Rate Movie'
+                : 'Rate Series'
+              : type === 'movie'
+                ? 'Add Movie'
+                : 'Add Series'}
           </h2>
           <button className="modal__close" onClick={onClose}>
             ×
@@ -188,18 +209,33 @@ export function Modal({ type, onClose, onAdd }: Props) {
             />
           </div>
 
-          {type === 'movie' && (
-            <div className="modal__field">
-              <label className="modal__label">Rating</label>
+          <div className="modal__field">
+            <label className="modal__label">Overall rating</label>
+            <div className="modal__rating">
               <Rating value={rating} onChange={setRating} />
-              <div className="modal__rating-hints">
-                <span>●● Dropped</span>
-                <span>● Finished, disliked</span>
-                <span>● Liked</span>
-                <span>●● Would rewatch</span>
+            </div>
+            <div className="modal__rating-hints">
+                <span>
+                  <i className="modal__dot modal__dot--red filled" />
+                  <i className="modal__dot modal__dot--red filled" />
+                  Dropped
+                </span>
+                <span>
+                  <i className="modal__dot modal__dot--red filled" />
+                  Finished, disliked
+                </span>
+                <i className="modal__hint-divider" />
+                <span>
+                  <i className="modal__dot modal__dot--green filled" />
+                  Liked
+                </span>
+                <span>
+                  <i className="modal__dot modal__dot--green filled" />
+                  <i className="modal__dot modal__dot--green filled" />
+                  Would rewatch
+                </span>
               </div>
             </div>
-          )}
 
           <div className="modal__field">
             <label className="modal__label">Thoughts</label>

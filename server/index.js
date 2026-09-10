@@ -94,13 +94,26 @@ async function loadOwnerData(ownerId) {
     s.seasons = await Promise.all(s.seasons)
   }
 
-  return { movies, series }
+  const watchLater = (
+    await db.all('SELECT * FROM watch_later WHERE owner_id = ?', [ownerId])
+  ).map((r) => ({
+    id: String(r.id),
+    title: r.title,
+    type: r.type,
+    releaseYear: r.release_year,
+    poster: r.poster ?? undefined,
+    imdbID: r.imdb_id ?? undefined,
+    totalSeasons: r.total_seasons ?? undefined,
+  }))
+
+  return { movies, series, watchLater }
 }
 
 async function saveOwnerData(ownerId, data) {
   await db.transaction(async (tx) => {
     await tx.run('DELETE FROM movies WHERE owner_id = ?', [ownerId])
     await tx.run('DELETE FROM series WHERE owner_id = ?', [ownerId])
+    await tx.run('DELETE FROM watch_later WHERE owner_id = ?', [ownerId])
 
     for (const m of data.movies || []) {
       await tx.run(
@@ -148,6 +161,22 @@ async function saveOwnerData(ownerId, data) {
           )
         }
       }
+    }
+
+    for (const w of data.watchLater || []) {
+      await tx.run(
+        'INSERT INTO watch_later (id, owner_id, title, type, release_year, poster, imdb_id, total_seasons) VALUES (?,?,?,?,?,?,?,?)',
+        [
+          String(w.id),
+          ownerId,
+          w.title,
+          w.type,
+          w.releaseYear ?? null,
+          w.poster ?? null,
+          w.imdbID ?? null,
+          w.totalSeasons ?? null,
+        ]
+      )
     }
   })
 }

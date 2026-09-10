@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Movie, Series, RatingLevel } from './types'
+import type { Movie, Series, RatingLevel, WatchLaterItem } from './types'
 import { Header } from './components/Header'
 import { FilterBar } from './components/FilterBar'
 import { MovieCard } from './components/MovieCard'
 import { SeriesCard } from './components/SeriesCard'
 import { Modal } from './components/Modal'
+import { WatchLaterCard } from './components/WatchLaterCard'
+import {
+  WatchLaterModal,
+  type WatchLaterItemData,
+} from './components/WatchLaterModal'
 import {
   fetchIdentity,
   fetchData,
@@ -82,10 +87,18 @@ function App() {
   const readonly = shareId !== null
 
   const [storedData] = useState(() => loadStoredData())
-  const [tab, setTab] = useState<'movies' | 'series'>('movies')
+  const [tab, setTab] = useState<'movies' | 'series' | 'watchLater'>('movies')
   const [movies, setMovies] = useState<Movie[]>(storedData?.movies ?? [])
   const [series, setSeries] = useState<Series[]>(storedData?.series ?? [])
+  const [watchLater, setWatchLater] = useState<WatchLaterItem[]>(
+    storedData?.watchLater ?? []
+  )
   const [modalOpen, setModalOpen] = useState(false)
+  const [ratingItem, setRatingItem] = useState<WatchLaterItem | null>(null)
+  const [watchModalOpen, setWatchModalOpen] = useState(false)
+  const [watchFilter, setWatchFilter] = useState<'all' | 'movies' | 'series'>(
+    'all'
+  )
   const [yearFilter, setYearFilter] = useState<number | null>(null)
   const [seriesLoading, setSeriesLoading] = useState<Set<string>>(new Set())
   const [sort, setSort] = useState<SortOption>('year-desc')
@@ -108,6 +121,7 @@ function App() {
           if (cancelled) return
           setMovies(data.movies)
           setSeries(data.series)
+          setWatchLater(data.watchLater ?? [])
           setLoadState('ready')
         })
         .catch(() => {
@@ -131,12 +145,16 @@ function App() {
         if (hasStored) {
           setMovies(stored.movies)
           setSeries(stored.series)
-          saveData({ movies: stored.movies, series: stored.series }).catch(
-            () => setOffline(true)
-          )
+          setWatchLater(stored.watchLater ?? [])
+          saveData({
+            movies: stored.movies,
+            series: stored.series,
+            watchLater: stored.watchLater ?? [],
+          }).catch(() => setOffline(true))
         } else {
           setMovies(data.movies)
           setSeries(data.series)
+          setWatchLater(data.watchLater ?? [])
         }
       } catch {
         if (cancelled) return
@@ -158,8 +176,8 @@ function App() {
 
   useEffect(() => {
     if (readonly) return
-    saveDataToStorage({ movies, series })
-  }, [movies, series, readonly])
+    saveDataToStorage({ movies, series, watchLater })
+  }, [movies, series, watchLater, readonly])
 
   useEffect(() => {
     if (readonly || !loaded || offline) return
@@ -168,10 +186,10 @@ function App() {
       return
     }
     const t = setTimeout(() => {
-      saveData({ movies, series }).catch(() => setOffline(true))
+      saveData({ movies, series, watchLater }).catch(() => setOffline(true))
     }, 500)
     return () => clearTimeout(t)
-  }, [movies, series, loaded, readonly, offline])
+  }, [movies, series, watchLater, loaded, readonly, offline])
 
   const allYears = useMemo(() => collectYears(movies, series), [movies, series])
   const filteredMovies = useMemo(
@@ -182,6 +200,34 @@ function App() {
     () => sortSeries(series, yearFilter, sort),
     [series, yearFilter, sort]
   )
+  const filteredWatchLater = useMemo(() => {
+    if (watchFilter === 'movies') {
+      return watchLater.filter((w) => w.type === 'movie')
+    }
+    if (watchFilter === 'series') {
+      return watchLater.filter((w) => w.type === 'series')
+    }
+    return watchLater
+  }, [watchLater, watchFilter])
+
+  const ratedImdbIds = useMemo(() => {
+    const ids = new Set<string>()
+    series.forEach((s) => {
+      if (s.imdbID) ids.add(s.imdbID)
+    })
+    return ids
+  }, [series])
+
+  const ratedKeys = useMemo(() => {
+    const keys = new Set<string>()
+    movies.forEach((m) =>
+      keys.add(`movie:${m.title.trim().toLowerCase()}`)
+    )
+    series.forEach((s) =>
+      keys.add(`series:${s.title.trim().toLowerCase()}`)
+    )
+    return keys
+  }, [movies, series])
 
   const handleAddMovie = (data: {
     title: string
@@ -264,6 +310,26 @@ function App() {
     setSeries((prev) => prev.filter((s) => s.id !== id))
   }
 
+  const handleAddWatchLater = (data: WatchLaterItemData) => {
+    setWatchLater((prev) => {
+      if (data.imdbID && prev.some((w) => w.imdbID === data.imdbID)) return prev
+      return [{ ...data, id: generateId() }, ...prev]
+    })
+  }
+
+  const handleRemoveWatchLater = (id: string) => {
+    setWatchLater((prev) => prev.filter((w) => w.id !== id))
+  }
+
+  const handleRemoveWatchLaterByImdb = (imdbID: string) => {
+    setWatchLater((prev) => prev.filter((w) => w.imdbID !== imdbID))
+  }
+
+  const handleRateWatchLater = (item: WatchLaterItem) => {
+    setRatingItem(item)
+    setModalOpen(true)
+  }
+
   const copyShareLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
@@ -300,16 +366,54 @@ function App() {
         )}
 
         <div className="app__toolbar">
-          <FilterBar
-            year={yearFilter}
-            onYearChange={setYearFilter}
-            sort={sort}
-            onSortChange={setSort}
-            years={allYears}
-          />
-          {!readonly && (
+          {tab !== 'watchLater' && (
+            <FilterBar
+              year={yearFilter}
+              onYearChange={setYearFilter}
+              sort={sort}
+              onSortChange={setSort}
+              years={allYears}
+            />
+          )}
+          {tab === 'watchLater' && (
+            <div className="app__watch-filter">
+              <button
+                className={`app__watch-filter-btn ${
+                  watchFilter === 'all' ? 'active' : ''
+                }`}
+                onClick={() => setWatchFilter('all')}
+              >
+                All
+              </button>
+              <button
+                className={`app__watch-filter-btn ${
+                  watchFilter === 'movies' ? 'active' : ''
+                }`}
+                onClick={() => setWatchFilter('movies')}
+              >
+                Movies
+              </button>
+              <button
+                className={`app__watch-filter-btn ${
+                  watchFilter === 'series' ? 'active' : ''
+                }`}
+                onClick={() => setWatchFilter('series')}
+              >
+                Series
+              </button>
+            </div>
+          )}
+          {!readonly && tab !== 'watchLater' && (
             <button className="app__add-btn" onClick={() => setModalOpen(true)}>
               + Add
+            </button>
+          )}
+          {!readonly && tab === 'watchLater' && (
+            <button
+              className="app__add-btn"
+              onClick={() => setWatchModalOpen(true)}
+            >
+              + Watch later
             </button>
           )}
         </div>
@@ -347,16 +451,26 @@ function App() {
                   priority={i === 0}
                 />
               ))
-            : filteredSeries.map((s) => (
-                <SeriesCard
-                  key={s.id}
-                  series={s}
-                  readonly={readonly}
-                  onUpdate={handleUpdateSeries}
-                  onDelete={handleDeleteSeries}
-                  loading={seriesLoading.has(s.id)}
-                />
-              ))}
+            : tab === 'series'
+              ? filteredSeries.map((s) => (
+                  <SeriesCard
+                    key={s.id}
+                    series={s}
+                    readonly={readonly}
+                    onUpdate={handleUpdateSeries}
+                    onDelete={handleDeleteSeries}
+                    loading={seriesLoading.has(s.id)}
+                  />
+                ))
+              : filteredWatchLater.map((item) => (
+                  <WatchLaterCard
+                    key={item.id}
+                    item={item}
+                    readonly={readonly}
+                    onRate={handleRateWatchLater}
+                    onDelete={handleRemoveWatchLater}
+                  />
+                ))}
         </div>
 
         {tab === 'movies' && filteredMovies.length === 0 && (
@@ -369,12 +483,54 @@ function App() {
             {readonly ? 'No series in this tracker.' : 'No series yet'}
           </div>
         )}
+        {tab === 'watchLater' && filteredWatchLater.length === 0 && (
+          <div className="app__empty">
+            {watchLater.length === 0
+              ? readonly
+                ? 'Nothing in the watch later list.'
+                : 'No movies or series in your watch later list yet'
+              : 'Nothing here.'}
+          </div>
+        )}
 
         {!readonly && modalOpen && (
           <Modal
-            type={tab === 'movies' ? 'movie' : 'series'}
-            onClose={() => setModalOpen(false)}
-            onAdd={tab === 'movies' ? handleAddMovie : handleAddSeries}
+            key={ratingItem?.id ?? 'add'}
+            type={ratingItem ? ratingItem.type : tab === 'movies' ? 'movie' : 'series'}
+            initial={
+              ratingItem
+                ? {
+                    title: ratingItem.title,
+                    releaseYear: ratingItem.releaseYear,
+                    poster: ratingItem.poster,
+                    imdbID: ratingItem.imdbID,
+                    totalSeasons: ratingItem.totalSeasons,
+                  }
+                : undefined
+            }
+            onClose={() => {
+              setModalOpen(false)
+              setRatingItem(null)
+            }}
+            onAdd={(data) => {
+              if (ratingItem) handleRemoveWatchLater(ratingItem.id)
+              if (ratingItem?.type === 'series') handleAddSeries(data)
+              else handleAddMovie(data)
+              setRatingItem(null)
+            }}
+          />
+        )}
+
+        {!readonly && watchModalOpen && (
+          <WatchLaterModal
+            onClose={() => setWatchModalOpen(false)}
+            onAdd={handleAddWatchLater}
+            onRemove={handleRemoveWatchLaterByImdb}
+            existingIds={new Set(
+              watchLater.map((w) => w.imdbID).filter((x): x is string => Boolean(x))
+            )}
+            ratedImdbIds={ratedImdbIds}
+            ratedKeys={ratedKeys}
           />
         )}
       </main>
