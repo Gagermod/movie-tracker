@@ -1,0 +1,106 @@
+import { DatabaseSync } from 'node:sqlite'
+
+const SCHEMA = `
+  PRAGMA journal_mode = WAL;
+  PRAGMA foreign_keys = ON;
+
+  CREATE TABLE IF NOT EXISTS owners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    share_id TEXT NOT NULL UNIQUE,
+    fingerprint TEXT UNIQUE,
+    ip TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS movies (
+    id TEXT NOT NULL,
+    owner_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    release_year INTEGER,
+    year INTEGER NOT NULL,
+    rating INTEGER NOT NULL DEFAULT 0,
+    thoughts TEXT NOT NULL DEFAULT '',
+    poster TEXT,
+    PRIMARY KEY (owner_id, id),
+    FOREIGN KEY (owner_id) REFERENCES owners(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS series (
+    id TEXT NOT NULL,
+    owner_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    release_year INTEGER,
+    year INTEGER NOT NULL,
+    thoughts TEXT NOT NULL DEFAULT '',
+    rating INTEGER NOT NULL DEFAULT 0,
+    poster TEXT,
+    imdb_id TEXT,
+    total_seasons INTEGER,
+    PRIMARY KEY (owner_id, id),
+    FOREIGN KEY (owner_id) REFERENCES owners(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS seasons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    series_id TEXT NOT NULL,
+    owner_id INTEGER NOT NULL,
+    idx INTEGER NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    rating INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (owner_id, series_id) REFERENCES series(owner_id, id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS episodes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    season_id INTEGER NOT NULL,
+    idx INTEGER NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    watched INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE
+  );
+`
+
+export default function createSqliteDb(dbPath) {
+  const db = new DatabaseSync(dbPath)
+  db.exec(SCHEMA)
+
+  // Direct operations run inside the transaction's exclusive slot.
+  const txApi = {
+    get: (sql, params = []) => db.prepare(sql).get(...params),
+    all: (sql, params = []) => db.prepare(sql).all(...params),
+    run: (sql, params = []) => {
+      const info = db.prepare(sql).run(...params)
+      return { lastInsertRowid: Number(info.lastInsertRowid) }
+    },
+  }
+
+  // Serialize every operation so async handlers can never interleave with an
+  // open transaction (single shared connection like the original sync code).
+  let chain = Promise.resolve()
+  function enqueue(fn) {
+    const next = chain.then(fn)
+    chain = next.catch(() => {})
+    return next
+  }
+
+  return {
+    kind: 'sqlite',
+    init: async () => {},
+    exec: (sql) => db.exec(sql),
+    get: (sql, params) => enqueue(() => txApi.get(sql, params)),
+    all: (sql, params) => enqueue(() => txApi.all(sql, params)),
+    run: (sql, params) => enqueue(() => txApi.run(sql, params)),
+    transaction: (fn) =>
+      enqueue(async () => {
+        db.exec('BEGIN')
+        try {
+          const result = await fn(txApi)
+          db.exec('COMMIT')
+          return result
+        } catch (err) {
+          db.exec('ROLLBACK')
+          throw err
+        }
+      }),
+  }
+}
