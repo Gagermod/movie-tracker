@@ -138,13 +138,13 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 24px;
-    height: 24px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 22px;
     color: $text-dim;
     background: none;
     border: none;
@@ -186,12 +186,6 @@
     &__btn-cancel {
       font-size: 15px;
     }
-
-    &__delete {
-      width: 30px;
-      height: 30px;
-      font-size: 19px;
-    }
   }
 }
 
@@ -219,6 +213,10 @@
 
     &__head {
       gap: 10px;
+    }
+
+    &__title {
+      padding-right: 56px;
     }
 
     &__delete {
