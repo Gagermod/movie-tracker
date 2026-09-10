@@ -207,6 +207,9 @@ app.get(
   })
 )
 
+// --- Health check (used by uptime monitors) --------------------------------
+app.get('/health', (req, res) => res.json({ ok: true }))
+
 // --- Production static serving -------------------------------------------
 const distDir = path.join(__dirname, '..', 'dist')
 if (fs.existsSync(distDir)) {
