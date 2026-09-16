@@ -96,6 +96,21 @@ export default function createSqliteDb(dbPath) {
     return next
   }
 
+  // Migrate: swap rating values 1 <-> 2 (Dropped/Disliked were swapped)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')));
+  `)
+  const migRows = db.prepare('SELECT name FROM migrations').all()
+  const applied = new Set(migRows.map((r) => r.name))
+  if (!applied.has('swap-rating-1-2')) {
+    db.exec(`
+      UPDATE movies SET rating = CASE rating WHEN 1 THEN 2 WHEN 2 THEN 1 END WHERE rating IN (1,2);
+      UPDATE series SET rating = CASE rating WHEN 1 THEN 2 WHEN 2 THEN 1 END WHERE rating IN (1,2);
+      UPDATE seasons SET rating = CASE rating WHEN 1 THEN 2 WHEN 2 THEN 1 END WHERE rating IN (1,2);
+      INSERT INTO migrations (name) VALUES ('swap-rating-1-2');
+    `)
+  }
+
   return {
     kind: 'sqlite',
     init: async () => {},

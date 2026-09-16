@@ -103,6 +103,23 @@ export default function createPostgresDb(connectionString) {
     kind: 'postgres',
     init: async () => {
       await pool.query(SCHEMA)
+      // Migrate: swap rating values 1 <-> 2 (Dropped/Disliked were swapped)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS migrations (
+          name TEXT PRIMARY KEY,
+          applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `)
+      const migRows = await pool.query('SELECT name FROM migrations')
+      const applied = new Set(migRows.rows.map((r) => r.name))
+      if (!applied.has('swap-rating-1-2')) {
+        await pool.query(`
+          UPDATE movies SET rating = CASE rating WHEN 1 THEN 2 WHEN 2 THEN 1 END WHERE rating IN (1,2);
+          UPDATE series SET rating = CASE rating WHEN 1 THEN 2 WHEN 2 THEN 1 END WHERE rating IN (1,2);
+          UPDATE seasons SET rating = CASE rating WHEN 1 THEN 2 WHEN 2 THEN 1 END WHERE rating IN (1,2);
+          INSERT INTO migrations (name) VALUES ('swap-rating-1-2')
+        `)
+      }
     },
     exec: async (sql) => {
       await pool.query(sql)

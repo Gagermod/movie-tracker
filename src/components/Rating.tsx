@@ -9,14 +9,14 @@ type Props = {
 
 const labels: Record<RatingLevel, string> = {
   0: 'Not rated',
-  1: 'Finished, disliked',
-  2: 'Dropped',
+  1: 'Dropped',
+  2: 'Finished, disliked',
   3: 'Liked',
   4: 'Would rewatch',
 }
 
 // Dot layout: [red outer][red inner] | [green inner][green outer]
-// Red group lit when value is 1 (inner) or 2 (both).
+// Red group lit when value is 1 (both) or 2 (inner only).
 // Green group lit when value is 3 (inner) or 4 (both).
 export function Rating({ value, onChange, readonly }: Props) {
   const click = (newValue: RatingLevel) => {
@@ -30,9 +30,9 @@ export function Rating({ value, onChange, readonly }: Props) {
         <button
           type="button"
           className={`rating__dot rating__dot--red ${
-            value === 2 ? 'filled' : ''
+            value === 1 ? 'filled' : ''
           }`}
-          onClick={() => click(2)}
+          onClick={() => click(1)}
           disabled={readonly}
           title="Dropped"
           aria-label="Dropped"
@@ -42,7 +42,7 @@ export function Rating({ value, onChange, readonly }: Props) {
           className={`rating__dot rating__dot--red ${
             value === 1 || value === 2 ? 'filled' : ''
           }`}
-          onClick={() => click(1)}
+          onClick={() => click(2)}
           disabled={readonly}
           title="Finished, disliked"
           aria-label="Finished, disliked"
