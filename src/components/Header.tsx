@@ -10,7 +10,9 @@ type Props = {
 export function Header({ tab, onTabChange }: Props) {
   return (
     <header className="header">
-      <div className="header__brand">MovieTracker</div>
+      <a className="header__brand" href="/" title="Open your tracker">
+        MovieTracker
+      </a>
       <nav className="header__nav">
         <button
           className={`header__tab ${tab === 'movies' ? 'active' : ''}`}

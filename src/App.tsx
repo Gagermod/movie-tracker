@@ -473,21 +473,59 @@ function App() {
                 ))}
         </div>
 
+        {readonly &&
+          !(
+            (tab === 'movies' && filteredMovies.length === 0) ||
+            (tab === 'series' && filteredSeries.length === 0) ||
+            (tab === 'watchLater' && filteredWatchLater.length === 0)
+          ) && (
+            <div className="app__own-tracker-wrap">
+              <a className="app__own-tracker" href="/">
+                Open my tracker
+              </a>
+            </div>
+          )}
+
         {tab === 'movies' && filteredMovies.length === 0 && (
           <div className="app__empty">
-            {readonly ? 'No movies in this tracker.' : 'No movies yet'}
+            {readonly ? (
+              <>
+                No movies in this tracker.{' '}
+                <a href="/" className="app__empty-link">
+                  Go to your tracker instead
+                </a>
+              </>
+            ) : (
+              'No movies yet'
+            )}
           </div>
         )}
         {tab === 'series' && filteredSeries.length === 0 && (
           <div className="app__empty">
-            {readonly ? 'No series in this tracker.' : 'No series yet'}
+            {readonly ? (
+              <>
+                No series in this tracker.{' '}
+                <a href="/" className="app__empty-link">
+                  Go to your tracker instead
+                </a>
+              </>
+            ) : (
+              'No series yet'
+            )}
           </div>
         )}
         {tab === 'watchLater' && filteredWatchLater.length === 0 && (
           <div className="app__empty">
             {watchLater.length === 0
               ? readonly
-                ? 'Nothing in the watch later list.'
+                ? (
+                    <>
+                      Nothing in the watch later list.{' '}
+                      <a href="/" className="app__empty-link">
+                        Go to your tracker instead
+                      </a>
+                    </>
+                  )
                 : 'No movies or series in your watch later list yet'
               : 'Nothing here.'}
           </div>

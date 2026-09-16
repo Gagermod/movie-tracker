@@ -15,6 +15,12 @@
     font-weight: 700;
     color: $text-strong;
     letter-spacing: -0.2px;
+    text-decoration: none;
+    transition: opacity 0.15s;
+
+    &:hover {
+      opacity: 0.7;
+    }
   }
 
   &__nav {
@@ -29,6 +35,8 @@
   &__watch {
     justify-self: end;
     display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   &__tab {
@@ -84,6 +92,16 @@
 
     &__brand {
       display: none;
+    }
+
+    &__nav {
+      grid-column: 1;
+      justify-self: start;
+    }
+
+    &__watch {
+      grid-column: 3;
+      justify-self: end;
     }
 
     &__tab {
