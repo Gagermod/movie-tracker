@@ -47,6 +47,7 @@ const SCHEMA = `
     idx INTEGER NOT NULL,
     title TEXT NOT NULL DEFAULT '',
     rating INTEGER NOT NULL DEFAULT 0,
+    watched_snapshot TEXT,
     FOREIGN KEY (owner_id, series_id) REFERENCES series(owner_id, id) ON DELETE CASCADE
   );
 
@@ -109,6 +110,16 @@ export default function createSqliteDb(dbPath) {
       UPDATE seasons SET rating = CASE rating WHEN 1 THEN 2 WHEN 2 THEN 1 END WHERE rating IN (1,2);
       INSERT INTO migrations (name) VALUES ('swap-rating-1-2');
     `)
+  }
+  if (!applied.has('season-watched-snapshot')) {
+    const seasonCols = db.prepare('PRAGMA table_info(seasons)').all()
+    const hasSnapshot = seasonCols.some((c) => c.name === 'watched_snapshot')
+    if (!hasSnapshot) {
+      db.exec('ALTER TABLE seasons ADD COLUMN watched_snapshot TEXT')
+    }
+    db.exec(
+      "INSERT INTO migrations (name) VALUES ('season-watched-snapshot')"
+    )
   }
 
   return {

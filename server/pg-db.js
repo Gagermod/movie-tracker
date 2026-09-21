@@ -44,6 +44,7 @@ const SCHEMA = `
     idx INTEGER NOT NULL,
     title TEXT NOT NULL DEFAULT '',
     rating INTEGER NOT NULL DEFAULT 0,
+    watched_snapshot TEXT,
     FOREIGN KEY (owner_id, series_id) REFERENCES series(owner_id, id) ON DELETE CASCADE
   );
 
@@ -120,6 +121,9 @@ export default function createPostgresDb(connectionString) {
           INSERT INTO migrations (name) VALUES ('swap-rating-1-2')
         `)
       }
+      await pool.query(
+        'ALTER TABLE seasons ADD COLUMN IF NOT EXISTS watched_snapshot TEXT'
+      )
     },
     exec: async (sql) => {
       await pool.query(sql)

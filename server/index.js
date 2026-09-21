@@ -79,6 +79,9 @@ async function loadOwnerData(ownerId) {
       ).map(async (s) => ({
         title: s.title,
         rating: s.rating,
+        watchedSnapshot: s.watched_snapshot
+          ? JSON.parse(s.watched_snapshot)
+          : undefined,
         episodes: (
           await db.all(
             'SELECT * FROM episodes WHERE season_id = ? ORDER BY idx',
@@ -150,8 +153,17 @@ async function saveOwnerData(ownerId, data) {
 
       for (const [idx, season] of (s.seasons || []).entries()) {
         const seasonInfo = await tx.run(
-          'INSERT INTO seasons (series_id, owner_id, idx, title, rating) VALUES (?,?,?,?,?)',
-          [String(s.id), ownerId, idx, season.title ?? '', season.rating ?? 0]
+          'INSERT INTO seasons (series_id, owner_id, idx, title, rating, watched_snapshot) VALUES (?,?,?,?,?,?)',
+          [
+            String(s.id),
+            ownerId,
+            idx,
+            season.title ?? '',
+            season.rating ?? 0,
+            season.watchedSnapshot
+              ? JSON.stringify(season.watchedSnapshot)
+              : null,
+          ]
         )
         const seasonId = Number(seasonInfo.lastInsertRowid)
         for (const [ei, ep] of (season.episodes || []).entries()) {

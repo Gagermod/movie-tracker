@@ -51,9 +51,29 @@ export function SeriesCard({
   const setSeasonRating = (seasonIdx: number, rating: RatingLevel) => {
     const updated = { ...series }
     updated.seasons = [...updated.seasons]
+    const season = updated.seasons[seasonIdx]
+    const wasRated = season.rating !== 0
+    const willRate = rating !== 0
+
+    let episodes = season.episodes
+    let watchedSnapshot = season.watchedSnapshot
+
+    if (wasRated && !willRate) {
+      episodes = season.episodes.map((ep, i) => ({
+        ...ep,
+        watched: watchedSnapshot?.[i] ?? ep.watched,
+      }))
+      watchedSnapshot = undefined
+    } else if (!wasRated && willRate) {
+      watchedSnapshot = season.episodes.map((ep) => ep.watched)
+      episodes = season.episodes.map((ep) => ({ ...ep, watched: true }))
+    }
+
     updated.seasons[seasonIdx] = {
-      ...updated.seasons[seasonIdx],
+      ...season,
       rating,
+      episodes,
+      watchedSnapshot,
     }
     onUpdate(updated)
   }

@@ -19,6 +19,7 @@ export type Season = {
   title: string
   rating: RatingLevel
   episodes: Episode[]
+  watchedSnapshot?: boolean[]
 }
 
 export type Series = {
