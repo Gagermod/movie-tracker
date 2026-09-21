@@ -135,6 +135,20 @@
     &:hover {
       background: $bg-input;
     }
+
+    &--rated {
+      background: $bg-input;
+      cursor: default;
+      opacity: 0.75;
+
+      &:hover {
+        background: $bg-input;
+      }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
   }
 
   &__result-poster {
@@ -163,6 +177,13 @@
   &__result-year {
     font-size: 13px;
     color: $text-muted;
+  }
+
+  &__result-status {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: $text-muted;
+    white-space: nowrap;
   }
 
   &__poster-wrap {

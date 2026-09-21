@@ -546,13 +546,15 @@ function App() {
                   }
                 : undefined
             }
+            existingImdbIds={ratedImdbIds}
+            existingKeys={ratedKeys}
             onClose={() => {
               setModalOpen(false)
               setRatingItem(null)
             }}
             onAdd={(data) => {
               if (ratingItem) handleRemoveWatchLater(ratingItem.id)
-              if (ratingItem?.type === 'series') handleAddSeries(data)
+              if (data.type === 'series') handleAddSeries(data)
               else handleAddMovie(data)
               setRatingItem(null)
             }}

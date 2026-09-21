@@ -9,6 +9,7 @@ type Props = {
   type: 'movie' | 'series'
   onClose: () => void
   onAdd: (data: {
+    type: 'movie' | 'series'
     title: string
     releaseYear: number | null
     year: number
@@ -25,9 +26,11 @@ type Props = {
     imdbID?: string
     totalSeasons?: number
   }
+  existingImdbIds?: Set<string>
+  existingKeys?: Set<string>
 }
 
-export function Modal({ type, onClose, onAdd, initial }: Props) {
+export function Modal({ type, onClose, onAdd, initial, existingImdbIds, existingKeys }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [releaseYear, setReleaseYear] = useState<number | null>(
     initial?.releaseYear ?? null
@@ -106,7 +109,9 @@ export function Modal({ type, onClose, onAdd, initial }: Props) {
 
   const handleSubmit = () => {
     if (!title.trim()) return
+    if (isAdded(title)) return
     onAdd({
+      type,
       title: title.trim(),
       releaseYear,
       year,
@@ -121,6 +126,13 @@ export function Modal({ type, onClose, onAdd, initial }: Props) {
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 85 }, (_, i) => currentYear - i)
+
+  const isAdded = (value: string): boolean => {
+    const titleKey = `${type}:${value.trim().toLowerCase()}`
+    return Boolean(
+      existingImdbIds?.has(value) || existingKeys?.has(titleKey)
+    )
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -165,29 +177,40 @@ export function Modal({ type, onClose, onAdd, initial }: Props) {
 
               {showResults && results.length > 0 && (
                 <div className="modal__results">
-                  {results.map((item) => (
-                    <button
-                      key={item.imdbID}
-                      className="modal__result"
-                      onClick={() => handleSelect(item)}
-                    >
-                      {item.Poster !== 'N/A' && (
-                        <img
-                          className="modal__result-poster"
-                          src={item.Poster}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      )}
-                      <span className="modal__result-text">
-                        <span className="modal__result-title">
-                          {item.Title}
+                  {results.map((item) => {
+                    const added = isAdded(item.imdbID)
+                    return (
+                      <button
+                        key={item.imdbID}
+                        className={`modal__result ${
+                          added ? 'modal__result--rated' : ''
+                        }`}
+                        onClick={() => handleSelect(item)}
+                        disabled={added}
+                      >
+                        {item.Poster !== 'N/A' && (
+                          <img
+                            className="modal__result-poster"
+                            src={item.Poster}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        )}
+                        <span className="modal__result-text">
+                          <span className="modal__result-title">
+                            {item.Title}
+                          </span>
+                          <span className="modal__result-year">{item.Year}</span>
                         </span>
-                        <span className="modal__result-year">{item.Year}</span>
-                      </span>
-                    </button>
-                  ))}
+                        {added && (
+                          <span className="modal__result-status">
+                            ✓ Added
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
