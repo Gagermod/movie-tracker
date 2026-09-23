@@ -21,6 +21,7 @@ export function SeriesCard({
   readonly,
 }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [seasonsOpen, setSeasonsOpen] = useState(false)
   const [editingThoughts, setEditingThoughts] = useState(false)
   const [thoughts, setThoughts] = useState(series.thoughts)
   const [addingEpisode, setAddingEpisode] = useState<string | null>(null)
@@ -79,7 +80,32 @@ export function SeriesCard({
   }
 
   const setOverallRating = (rating: RatingLevel) => {
-    onUpdate({ ...series, rating })
+    const wasRated = series.rating !== 0
+    const willRate = rating !== 0
+
+    let seasons = series.seasons
+    let watchedSnapshot = series.watchedSnapshot
+
+    if (wasRated && !willRate) {
+      seasons = series.seasons.map((season, sIdx) => ({
+        ...season,
+        episodes: season.episodes.map((ep, eIdx) => ({
+          ...ep,
+          watched: watchedSnapshot?.[sIdx]?.[eIdx] ?? ep.watched,
+        })),
+      }))
+      watchedSnapshot = undefined
+    } else if (!wasRated && willRate) {
+      watchedSnapshot = series.seasons.map((season) =>
+        season.episodes.map((ep) => ep.watched)
+      )
+      seasons = series.seasons.map((season) => ({
+        ...season,
+        episodes: season.episodes.map((ep) => ({ ...ep, watched: true })),
+      }))
+    }
+
+    onUpdate({ ...series, rating, seasons, watchedSnapshot })
   }
 
   const addEpisode = async (seasonIdx: number) => {
@@ -133,6 +159,7 @@ export function SeriesCard({
         },
       ]
       onUpdate(updated)
+      setSeasonsOpen(true)
       setExpanded(`season-${updated.seasons.length - 1}`)
     } finally {
       setAddingSeason(false)
@@ -143,6 +170,13 @@ export function SeriesCard({
     const watched = season.episodes.filter((e) => e.watched).length
     return { watched, total: season.episodes.length }
   }
+
+  const watchedSeasons = series.seasons.filter(
+    (season) =>
+      season.episodes.length > 0 &&
+      season.episodes.every((ep) => ep.watched),
+  ).length
+  const totalSeasons = series.seasons.length
 
   const saveThoughts = () => {
     onUpdate({ ...series, thoughts })
@@ -228,91 +262,129 @@ export function SeriesCard({
               <span className="series-card__spinner" /> Fetching seasons…
             </div>
           )}
-          {series.seasons.map((season, sIdx) => {
-            const progress = getSeasonProgress(season)
-            const isExpanded = expanded === `season-${sIdx}`
+          {series.seasons.length > 0 && (
+            <button
+              className="series-card__seasons-toggle"
+              onClick={() => setSeasonsOpen((open) => !open)}
+              aria-expanded={seasonsOpen}
+            >
+              <div className="series-card__seasons-title-row">
+                <span
+                  className={`series-card__seasons-arrow ${
+                    seasonsOpen ? 'open' : ''
+                  }`}
+                >
+                  ▸
+                </span>
+                <span className="series-card__seasons-title">Seasons</span>
+                <span className="series-card__seasons-count">
+                  {series.seasons.length}
+                </span>
+                <span className="series-card__seasons-progress">
+                  {watchedSeasons}/{totalSeasons}
+                </span>
+              </div>
+              <div className="series-card__seasons-bar">
+                <div
+                  className="series-card__seasons-bar-fill"
+                  style={{
+                    width: totalSeasons
+                      ? `${(watchedSeasons / totalSeasons) * 100}%`
+                      : '0%',
+                  }}
+                />
+              </div>
+            </button>
+          )}
+          {seasonsOpen && (
+            <>
+              {series.seasons.map((season, sIdx) => {
+                const progress = getSeasonProgress(season)
+                const isExpanded = expanded === `season-${sIdx}`
 
-            return (
-              <div className="season" key={sIdx}>
-                <div className="season__head">
-                  <button
-                    className="season__expand"
-                    onClick={() =>
-                      setExpanded(isExpanded ? null : `season-${sIdx}`)
-                    }
-                  >
-                    <div className="season__title-row">
-                      <span
-                        className={`season__arrow ${isExpanded ? 'open' : ''}`}
+                return (
+                  <div className="season" key={sIdx}>
+                    <div className="season__head">
+                      <button
+                        className="season__expand"
+                        onClick={() =>
+                          setExpanded(isExpanded ? null : `season-${sIdx}`)
+                        }
                       >
-                        ▸
-                      </span>
-                      <span className="season__title">{season.title}</span>
-                      <span className="season__progress">
-                        {progress.watched}/{progress.total}
-                      </span>
-                    </div>
-                    <div className="season__bar">
-                      <div
-                        className="season__bar-fill"
-                        style={{
-                          width: progress.total
-                            ? `${(progress.watched / progress.total) * 100}%`
-                            : '0%',
-                        }}
+                        <div className="season__title-row">
+                          <span
+                            className={`season__arrow ${isExpanded ? 'open' : ''}`}
+                          >
+                            ▸
+                          </span>
+                          <span className="season__title">{season.title}</span>
+                          <span className="season__progress">
+                            {progress.watched}/{progress.total}
+                          </span>
+                        </div>
+                        <div className="season__bar">
+                          <div
+                            className="season__bar-fill"
+                            style={{
+                              width: progress.total
+                                ? `${(progress.watched / progress.total) * 100}%`
+                                : '0%',
+                            }}
+                          />
+                        </div>
+                      </button>
+
+                      <Rating
+                        value={season.rating}
+                        readonly={readonly}
+                        onChange={(rating) => setSeasonRating(sIdx, rating)}
                       />
                     </div>
-                  </button>
 
-                  <Rating
-                    value={season.rating}
-                    readonly={readonly}
-                    onChange={(rating) => setSeasonRating(sIdx, rating)}
-                  />
-                </div>
-
-                {isExpanded && (
-                  <div className="season__episodes">
-                    {season.episodes.map((ep, eIdx) => (
-                      <label
-                        className={`episode ${readonly ? 'episode--readonly' : ''}`}
-                        key={eIdx}
-                      >
-                        <input
-                          type="checkbox"
-                          className="episode__check"
-                          checked={ep.watched}
-                          disabled={readonly}
-                          onChange={() => toggleEpisode(sIdx, eIdx)}
-                        />
-                        <span className="episode__name">{ep.name}</span>
-                      </label>
-                    ))}
-                    {!readonly && (
-                      <button
-                        className="season__add-episode"
-                        disabled={addingEpisode === `season-${sIdx}`}
-                        onClick={() => addEpisode(sIdx)}
-                      >
-                        {addingEpisode === `season-${sIdx}`
-                          ? 'Fetching…'
-                          : '+ Episode'}
-                      </button>
+                    {isExpanded && (
+                      <div className="season__episodes">
+                        {season.episodes.map((ep, eIdx) => (
+                          <label
+                            className={`episode ${readonly ? 'episode--readonly' : ''}`}
+                            key={eIdx}
+                          >
+                            <input
+                              type="checkbox"
+                              className="episode__check"
+                              checked={ep.watched}
+                              disabled={readonly}
+                              onChange={() => toggleEpisode(sIdx, eIdx)}
+                            />
+                            <span className="episode__name">{ep.name}</span>
+                          </label>
+                        ))}
+                        {!readonly && (
+                          <button
+                            className="season__add-episode"
+                            disabled={addingEpisode === `season-${sIdx}`}
+                            onClick={() => addEpisode(sIdx)}
+                          >
+                            {addingEpisode === `season-${sIdx}`
+                              ? 'Fetching…'
+                              : '+ Episode'}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            )
-          })}
+                )
+              })}
 
-          {!readonly && (
-            <button
-              className="series-card__add-season"
-              disabled={addingSeason}
-              onClick={addSeason}
-            >
-              {addingSeason ? 'Fetching…' : '+ Season'}
-            </button>
+              {!readonly && (
+                <button
+                  className="series-card__add-season"
+                  disabled={addingSeason}
+                  onClick={addSeason}
+                >
+                  {addingSeason ? 'Fetching…' : '+ Season'}
+                </button>
+              )}
+            </>
           )}
           {message && <div className="series-card__message">{message}</div>}
         </div>

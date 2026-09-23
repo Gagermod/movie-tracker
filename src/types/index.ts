@@ -33,6 +33,7 @@ export type Series = {
   imdbID?: string
   totalSeasons?: number
   seasons: Season[]
+  watchedSnapshot?: boolean[][]
 }
 
 export type WatchLaterItem = {

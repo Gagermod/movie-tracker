@@ -36,6 +36,7 @@ const SCHEMA = `
     poster TEXT,
     imdb_id TEXT,
     total_seasons INTEGER,
+    watched_snapshot TEXT,
     PRIMARY KEY (owner_id, id),
     FOREIGN KEY (owner_id) REFERENCES owners(id) ON DELETE CASCADE
   );
@@ -119,6 +120,18 @@ export default function createSqliteDb(dbPath) {
     }
     db.exec(
       "INSERT INTO migrations (name) VALUES ('season-watched-snapshot')"
+    )
+  }
+  if (!applied.has('series-watched-snapshot')) {
+    const seriesCols = db.prepare('PRAGMA table_info(series)').all()
+    const hasSeriesSnapshot = seriesCols.some(
+      (c) => c.name === 'watched_snapshot'
+    )
+    if (!hasSeriesSnapshot) {
+      db.exec('ALTER TABLE series ADD COLUMN watched_snapshot TEXT')
+    }
+    db.exec(
+      "INSERT INTO migrations (name) VALUES ('series-watched-snapshot')"
     )
   }
 

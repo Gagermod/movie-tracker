@@ -33,6 +33,7 @@ const SCHEMA = `
     poster TEXT,
     imdb_id TEXT,
     total_seasons INTEGER,
+    watched_snapshot TEXT,
     PRIMARY KEY (owner_id, id),
     FOREIGN KEY (owner_id) REFERENCES owners(id) ON DELETE CASCADE
   );
@@ -123,6 +124,9 @@ export default function createPostgresDb(connectionString) {
       }
       await pool.query(
         'ALTER TABLE seasons ADD COLUMN IF NOT EXISTS watched_snapshot TEXT'
+      )
+      await pool.query(
+        'ALTER TABLE series ADD COLUMN IF NOT EXISTS watched_snapshot TEXT'
       )
     },
     exec: async (sql) => {

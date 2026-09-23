@@ -138,6 +138,78 @@
     gap: 6px;
   }
 
+  &__seasons-toggle {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: $bg-input;
+    border: 1px solid $border;
+    border-radius: $radius;
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s;
+
+    &:hover {
+      border-color: $border-strong;
+    }
+  }
+
+  &__seasons-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__seasons-arrow {
+    font-size: 10px;
+    color: $text-muted;
+    transition: transform 0.15s;
+
+    &.open {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__seasons-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-strong;
+  }
+
+  &__seasons-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-muted;
+    background: $border;
+    border-radius: 999px;
+    padding: 1px 8px;
+    line-height: 1.5;
+    flex-shrink: 0;
+  }
+
+  &__seasons-progress {
+    margin-left: auto;
+    font-size: 14px;
+    color: $text-muted;
+    flex-shrink: 0;
+  }
+
+  &__seasons-bar {
+    height: 3px;
+    background: $border;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  &__seasons-bar-fill {
+    height: 100%;
+    background: $green;
+    border-radius: 2px;
+    transition: width 0.2s;
+  }
+
   &__loading {
     display: flex;
     align-items: center;
@@ -409,6 +481,26 @@
       font-size: 14px;
       padding: 10px;
     }
+
+    &__seasons-toggle {
+      padding: 15px 18px;
+    }
+
+    &__seasons-title {
+      font-size: 16px;
+    }
+
+    &__seasons-count {
+      font-size: 13px;
+    }
+
+    &__seasons-progress {
+      font-size: 15px;
+    }
+
+    &__seasons-bar {
+      height: 5px;
+    }
   }
 
   .season {
@@ -507,6 +599,12 @@
 
   .season {
     &__head {
+      padding: 12px 10px;
+    }
+  }
+
+  .series-card {
+    &__seasons-toggle {
       padding: 12px 10px;
     }
   }

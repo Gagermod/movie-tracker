@@ -71,6 +71,9 @@ async function loadOwnerData(ownerId) {
       poster: r.poster ?? undefined,
       imdbID: r.imdb_id ?? undefined,
       totalSeasons: r.total_seasons ?? undefined,
+      watchedSnapshot: r.watched_snapshot
+        ? JSON.parse(r.watched_snapshot)
+        : undefined,
       seasons: (
         await db.all(
           'SELECT * FROM seasons WHERE owner_id = ? AND series_id = ? ORDER BY idx',
@@ -136,7 +139,7 @@ async function saveOwnerData(ownerId, data) {
 
     for (const s of data.series || []) {
       await tx.run(
-        'INSERT INTO series (id, owner_id, title, release_year, year, thoughts, rating, poster, imdb_id, total_seasons) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        'INSERT INTO series (id, owner_id, title, release_year, year, thoughts, rating, poster, imdb_id, total_seasons, watched_snapshot) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
         [
           String(s.id),
           ownerId,
@@ -148,6 +151,7 @@ async function saveOwnerData(ownerId, data) {
           s.poster ?? null,
           s.imdbID ?? null,
           s.totalSeasons ?? null,
+          s.watchedSnapshot ? JSON.stringify(s.watchedSnapshot) : null,
         ]
       )
 
