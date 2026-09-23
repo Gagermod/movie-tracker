@@ -3,6 +3,7 @@ import type { Series, Season, RatingLevel } from '../types'
 import { Rating } from './Rating'
 import { smallPoster } from '../utils/poster'
 import { fetchEpisodeTitle, fetchSeason } from '../utils/omdb'
+import { applySeasonSync, fetchSeasonSyncData } from '../utils/episodeSync'
 import './SeriesCard.scss'
 
 type Props = {
@@ -26,6 +27,7 @@ export function SeriesCard({
   const [thoughts, setThoughts] = useState(series.thoughts)
   const [addingEpisode, setAddingEpisode] = useState<string | null>(null)
   const [addingSeason, setAddingSeason] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
   const notify = (text: string) => {
@@ -131,6 +133,35 @@ export function SeriesCard({
       onUpdate(updated)
     } finally {
       setAddingEpisode(null)
+    }
+  }
+
+  const syncTitles = async () => {
+    if (syncing) return
+    if (!series.imdbID || series.seasons.length === 0) {
+      notify('No IMDb link to sync titles.')
+      return
+    }
+    setSyncing(true)
+    setMessage(null)
+    try {
+      const fetched = await fetchSeasonSyncData(series)
+      const updated = applySeasonSync(series, fetched)
+      if (updated !== series) {
+        onUpdate(updated)
+        const removed = series.seasons.length - updated.seasons.length
+        notify(
+          removed > 0
+            ? `Removed ${removed} announced season(s)`
+            : 'Episode titles updated'
+        )
+      } else {
+        notify('No changes found')
+      }
+    } catch {
+      notify('Sync failed — check OMDb availability.')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -376,13 +407,25 @@ export function SeriesCard({
               })}
 
               {!readonly && (
-                <button
-                  className="series-card__add-season"
-                  disabled={addingSeason}
-                  onClick={addSeason}
-                >
-                  {addingSeason ? 'Fetching…' : '+ Season'}
-                </button>
+                <div className="series-card__seasons-actions">
+                  {series.imdbID && series.seasons.length > 0 && (
+                    <button
+                      className="series-card__sync"
+                      disabled={syncing}
+                      onClick={syncTitles}
+                      title="Update episode titles from OMDb"
+                    >
+                      {syncing ? 'Checking…' : 'Sync titles'}
+                    </button>
+                  )}
+                  <button
+                    className="series-card__add-season"
+                    disabled={addingSeason}
+                    onClick={addSeason}
+                  >
+                    {addingSeason ? 'Fetching…' : '+ Season'}
+                  </button>
+                </div>
               )}
             </>
           )}

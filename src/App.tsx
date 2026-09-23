@@ -17,6 +17,11 @@ import {
   fetchShared,
 } from './api'
 import { fetchSeriesSeasons } from './utils/omdb'
+import {
+  applySeasonSync,
+  fetchSeasonSyncData,
+  seriesNeedsSync,
+} from './utils/episodeSync'
 import { loadStoredData, saveDataToStorage } from './storage'
 import './App.scss'
 
@@ -112,6 +117,12 @@ function App() {
     'loading'
   )
 
+  const seriesRef = useRef(series)
+
+  useEffect(() => {
+    seriesRef.current = series
+  }, [series])
+
   useEffect(() => {
     let cancelled = false
 
@@ -180,7 +191,7 @@ function App() {
   }, [movies, series, watchLater, readonly])
 
   useEffect(() => {
-    if (readonly || !loaded || offline) return
+    if (readonly || !loaded) return
     if (skipFirstSave.current) {
       skipFirstSave.current = false
       return
@@ -190,6 +201,38 @@ function App() {
     }, 500)
     return () => clearTimeout(t)
   }, [movies, series, watchLater, loaded, readonly, offline])
+
+  useEffect(() => {
+    if (readonly || !loaded) return
+    let cancelled = false
+
+    const runSync = async () => {
+      const targets = seriesRef.current.filter(seriesNeedsSync)
+      for (const target of targets) {
+        if (cancelled) return
+        try {
+          const fetched = await fetchSeasonSyncData(target)
+          if (cancelled) return
+          setSeries((prev) =>
+            prev.map((item) =>
+              item.id === target.id ? applySeasonSync(item, fetched) : item
+            )
+          )
+        } catch {
+          // sync is best-effort; throttle prevents tight retry loops
+        }
+      }
+    }
+
+    void runSync()
+    const intervalId = window.setInterval(() => {
+      void runSync()
+    }, 6 * 60 * 60 * 1000)
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [readonly, loaded])
 
   const allYears = useMemo(() => collectYears(movies, series), [movies, series])
   const filteredMovies = useMemo(

@@ -229,12 +229,19 @@
     animation: series-spin 0.7s linear infinite;
   }
 
+  &__seasons-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  &__sync,
   &__add-season {
     @include btn-ghost;
     justify-content: center;
+    flex: 1;
     padding: 8px;
     font-size: 14px;
-    margin-top: 4px;
 
     &:disabled {
       opacity: 0.6;
@@ -477,6 +484,7 @@
       font-size: 15px;
     }
 
+    &__sync,
     &__add-season {
       font-size: 14px;
       padding: 10px;

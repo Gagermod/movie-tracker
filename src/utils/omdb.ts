@@ -34,10 +34,32 @@ export type SeriesSeasonData = {
   episodes: string[]
 }
 
+type OmdbEpisode = {
+  Title: string
+  Episode: string
+  Released?: string
+}
+
 type OmdbSeasonResponse = {
   Response: string
   Error?: string
-  Episodes?: { Title: string; Episode: string }[]
+  Episodes?: OmdbEpisode[]
+}
+
+const MIN_AIRED_TIMESTAMP = Date.UTC(1901, 0, 1)
+
+function isAired(released: string | undefined): boolean {
+  if (!released || released === 'N/A') return false
+  const timestamp = Date.parse(released)
+  if (Number.isNaN(timestamp)) return false
+  if (timestamp < MIN_AIRED_TIMESTAMP) return false
+  return timestamp <= Date.now()
+}
+
+function airedEpisodeTitles(episodes: OmdbEpisode[]): string[] {
+  return episodes
+    .filter((ep) => isAired(ep.Released))
+    .map((ep) => `${ep.Episode}. ${ep.Title}`)
 }
 
 async function fetchJson<T>(url: string, timeoutMs = 10000): Promise<T> {
@@ -102,9 +124,11 @@ export async function fetchSeriesSeasons(
     if (n > 1) await sleep(SEASON_DELAY_MS)
     const data = await fetchSeasonData(imdbID, n)
     if (data && data.Response === 'True' && data.Episodes?.length) {
+      const episodes = airedEpisodeTitles(data.Episodes)
+      if (!episodes.length) break
       seasons.push({
         title: `Season ${n}`,
-        episodes: data.Episodes.map((ep) => `${ep.Episode}. ${ep.Title}`),
+        episodes,
       })
     } else {
       break
@@ -119,10 +143,21 @@ export async function fetchSeason(
 ): Promise<SeriesSeasonData | null> {
   const data = await fetchSeasonData(imdbID, seasonNum)
   if (!data || data.Response !== 'True' || !data.Episodes?.length) return null
+  const episodes = airedEpisodeTitles(data.Episodes)
+  if (!episodes.length) return null
   return {
     title: `Season ${seasonNum}`,
-    episodes: data.Episodes.map((ep) => `${ep.Episode}. ${ep.Title}`),
+    episodes,
   }
+}
+
+export async function fetchSeasonAiredTitles(
+  imdbID: string,
+  seasonNum: number
+): Promise<string[] | null> {
+  const data = await fetchSeasonData(imdbID, seasonNum)
+  if (!data || data.Response !== 'True' || !data.Episodes?.length) return null
+  return airedEpisodeTitles(data.Episodes)
 }
 
 export async function fetchEpisodeTitle(
@@ -135,6 +170,7 @@ export async function fetchEpisodeTitle(
   const idx = data.Episodes.findIndex(
     (ep) => Number(ep.Episode) === nextEpisode
   )
-  if (idx >= 0) return `${nextEpisode}. ${data.Episodes[idx].Title}`
-  return null
+  if (idx < 0) return null
+  if (!isAired(data.Episodes[idx].Released)) return null
+  return `${nextEpisode}. ${data.Episodes[idx].Title}`
 }
